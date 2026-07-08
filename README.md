@@ -1,87 +1,64 @@
-Proyecto: Modelo Predictivo de Campaña
-Este repositorio contiene un proyecto de machine learning supervisado dividido en dos partes principales:
+# Poultry Campaign Yield Model — Regresión (EDA + PyCaret)
 
-Limpieza y Preparación de Datos (Limpieza_Data_Campaña.ipynb)
+Predicción del rendimiento de campañas **avícolas** —la variable `% total primera`— a partir de variables de producción (pesos por día de crecida, índices ICA/IEP, mortalidad). El proyecto está dividido en dos notebooks: limpieza/EDA y modelado con **PyCaret**.
 
-Entrenamiento y Evaluación del Modelo (Modelo_Pred_Pycaret_Campaña.ipynb)
+## Contexto
 
-El objetivo final es entrenar un modelo de regresión para predecir el "% total primera" basado en las características de una campaña (posiblemente avícola, según los nombres de las variables).
+En producción avícola, anticipar el porcentaje de aves de "primera" calidad de una campaña permite planificar ventas, precios y logística. El reto es limpiar datos ruidosos (outliers, alta cardinalidad de proveedores) y elegir un modelo que capture relaciones no lineales.
 
-workflow del Proyecto
-El flujo de trabajo es secuencial: el primer notebook toma datos brutos, los limpia y los prepara; el segundo notebook utiliza esos datos limpios para construir y evaluar el modelo predictivo.
+## Objetivo
 
-Parte 1: Limpieza y Preparación de Datos
-(Notebook: Limpieza_Data_Campaña.ipynb)
+Construir un pipeline reproducible que (1) limpie y explore los datos con rigor estadístico y (2) entrene y afine un modelo de regresión que prediga `% total primera`, comparando algoritmos automáticamente con PyCaret.
 
-Este notebook se encarga de la ingesta, exploración (EDA) y limpieza de los datos iniciales.
+## Arquitectura
 
-Pasos Clave:
+```mermaid
+flowchart LR
+    A[Campaña Prueba.xlsx] --> B[01 EDA + Limpieza<br/>IQR, feature eng, VIF, normalidad]
+    B --> C[data/campania_procesado.xlsx]
+    D[Data para prediccion.xlsx] --> E[02 PyCaret Regresion<br/>compare + Random Forest + tuning]
+    E --> F[Evaluacion: residuos, error, importancia]
+```
 
-Carga de Datos: Se leen los datos desde el archivo Campaña Prueba.xlsx.
+## Stack
 
-Análisis Exploratorio (EDA):
+| Categoría | Herramientas |
+|---|---|
+| Lenguaje | Python |
+| EDA / estadística | pandas, NumPy, SciPy, statsmodels (VIF, Shapiro, ANOVA) |
+| Modelado | PyCaret (regresión), scikit-learn (Random Forest) |
+| Visualización | Matplotlib, Seaborn |
+| Entorno | Jupyter Notebook |
 
-Se revisa la estructura (.shape), tipos de datos (.dtypes) y valores nulos (.isnull().sum()).
+## Estructura del proyecto
 
-Se analizan las variables categóricas como Zona y Proveedor para entender su distribución.
+```
+poultry-campaign-yield-model/
+├── data/                       # (no versionado) datasets de entrada y salida
+├── 01_eda_limpieza.ipynb       # EDA -> outliers (IQR) -> feature eng -> baseline lineal -> export
+├── 02_modelo_pycaret.ipynb     # PyCaret: compare_models -> Random Forest -> tuning -> evaluacion
+├── requirements.txt
+└── README.md
+```
 
-Limpieza de Tipos de Datos: Las columnas Centro y Código de Campaña se convierten al tipo object (categórico).
+## Ejecución
 
-Ingeniería de Características (Feature Engineering):
+1. Clona el repositorio: `git clone https://github.com/Alvaro192023/poultry-campaign-yield-model.git`
+2. Instala dependencias: `pip install -r requirements.txt`
+3. Coloca los datasets en `data/` (`Campaña Prueba.xlsx` para el notebook 1; el dataset con `% total primera` para el notebook 2).
+4. Ejecuta `01_eda_limpieza.ipynb` (genera `data/campania_procesado.xlsx`) y luego `02_modelo_pycaret.ipynb`.
 
-Se identifica que la columna Proveedor tiene 39 categorías únicas.
+## Resultados e impacto
 
-Se crea una nueva columna ProveedorRS extrayendo solo la parte textual del nombre (ej. "REYNA 2" -> "REYNA"), reduciendo la cardinalidad.
+- Limpieza rigurosa: tratamiento de outliers por **IQR (clipping)**, reducción de cardinalidad de proveedores y chequeos de **normalidad (Shapiro)** y **multicolinealidad (VIF)**.
+- Comparación automática de modelos con PyCaret y **Random Forest afinado** por MAPE/MAE.
+- Gráficas de residuos, error e **importancia de variables** para interpretar los drivers del rendimiento.
 
-Se elimina la columna original Proveedor.
+## Próximos pasos
 
-Manejo de Outliers (Valores Atípicos):
+- Validar con datos de nuevas campañas y comparar contra Gradient Boosting / XGBoost.
+- Registrar el modelo para predicción en producción.
 
-Se identifican outliers en las columnas numéricas usando el método del Rango Intercuartílico (IQR).
+## Licencia y contacto
 
-Se aplica una función recortar_outliers que "recorta" (clipping) los valores atípicos, ajustándolos a los límites (bigotes) definidos por el IQR, en lugar de eliminarlos.
-
-Visualización: Se utilizan histogramas y diagramas de caja (boxplot) para visualizar la distribución de las variables y el efecto de la limpieza de outliers.
-
-Parte 2: Modelo Predictivo con PyCaret
-(Notebook: Modelo_Pred_Pycaret_Campaña.ipynb)
-
-Este notebook toma los datos procesados de la parte 1 y utiliza la librería PyCaret para encontrar el mejor modelo de regresión.
-
-Pasos Clave:
-
-Carga de Datos Limpios: Se carga el archivo Copia de Data para prediccion.xlsx (el resultado de la limpieza anterior).
-
-Definición del Problema:
-
-Variable Objetivo (Target): target1 = "% total primera".
-
-Variables Predictoras (Features): Se seleccionan 11 características, incluyendo Sexo, Carga granja, Día 7, Día 14, Top ICA, Top IEP, etc..
-
-Configuración del Entorno PyCaret:
-
-Se importa el módulo de regresión: from pycaret.regression import *.
-
-Se inicializa el entorno (setup) especificando:
-
-El target (% total primera).
-
-Normalización de datos (normalize=True).
-
-Eliminación de multicolinealidad (remove_multicollinearity=True).
-
-Transformación de datos (transformation=True, usando Yeo-Johnson).
-
-Eliminación de outliers (remove_outliers=True).
-
-Entrenamiento y Selección de Modelos:
-
-Se comparan múltiples modelos de regresión para encontrar el de mejor rendimiento (compare_models).
-
-Se selecciona el modelo Random Forest (rf) como el modelo a optimizar (create_model('rf')).
-
-Optimización (Tuning):
-
-Se realiza un ajuste fino (tuning) del modelo Random Forest, optimizando primero para MAPE (tune_model(model_select, optimize="MAPE")) y luego para MAE (tune_model(model_select, optimize="MAE")).
-
-Evaluación: Se generan visualizaciones para evaluar el rendimiento del modelo afinado, incluyendo gráficos de residuos, error de predicción e importancia de características (plot_model).
+MIT. Álvaro Villanueva Kobayashi — alvarovillakoba515@gmail.com · [GitHub](https://github.com/Alvaro192023)
