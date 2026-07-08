@@ -1,0 +1,15 @@
+# Datos (no versionar)
+data/
+*.xlsx
+*.xls
+
+# Notebooks / Python
+.ipynb_checkpoints/
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# PyCaret / logs
+logs.log
+catboost_info/
